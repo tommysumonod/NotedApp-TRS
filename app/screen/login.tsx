@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
+import { useState } from "react";
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useAuthContext } from "../../contexts/AuthContext";
 
 export default function Login() {
@@ -13,7 +13,7 @@ export default function Login() {
   const handleLogin = async () => {
     try {
       await signIn(email, password);
-      router.replace("./(tabs)");
+      router.replace("/(tabs)/NoteList");
     } catch (err: any) {
       setError(err.message);
     }
@@ -40,7 +40,7 @@ export default function Login() {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <TouchableOpacity style={styles.button} onPress={() => router.replace("../(tabs)/NoteList")}>
+      <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
 
