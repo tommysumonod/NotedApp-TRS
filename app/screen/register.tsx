@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
+import { useState } from "react";
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useAuthContext } from "../../contexts/AuthContext";
 
 export default function Register() {
@@ -26,6 +26,7 @@ export default function Register() {
       <TextInput
         style={styles.input}
         placeholder="Email"
+        placeholderTextColor="black"
         keyboardType="email-address"
         value={email}
         onChangeText={setEmail}
@@ -33,6 +34,7 @@ export default function Register() {
       <TextInput
         style={styles.input}
         placeholder="Password"
+        placeholderTextColor="black"
         secureTextEntry
         value={password}
         onChangeText={setPassword}

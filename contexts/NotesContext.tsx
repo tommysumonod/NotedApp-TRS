@@ -1,16 +1,16 @@
 // contexts/NotesContext.tsx
-import React, { createContext, useContext, useEffect, useState } from "react";
 import {
-  collection,
   addDoc,
-  onSnapshot,
-  query,
-  orderBy,
-  updateDoc,
-  doc,
+  collection,
   deleteDoc,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
   serverTimestamp,
+  updateDoc,
 } from "firebase/firestore";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { db } from "../firebase/firebaseConfig";
 import { useAuthContext } from "./AuthContext";
 
@@ -27,7 +27,6 @@ type NotesContextType = {
   addNote: (note: Omit<Note, "id">) => Promise<string>;
   updateNote: (id: string, title: string, content: string) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
-  refresh: () => void;
 };
 
 const NotesContext = createContext<NotesContextType | undefined>(undefined);
@@ -39,28 +38,34 @@ export const NotesProvider = ({ children }: { children: React.ReactNode }) => {
   const [unsubscribe, setUnsubscribe] = useState<(() => void) | null>(null);
 
   useEffect(() => {
-    // cleanup previous listener
     if (unsubscribe) {
       unsubscribe();
       setUnsubscribe(null);
     }
 
     if (!user) {
+      // no user = no notes
       setNotes([]);
       setLoading(false);
       return;
     }
 
     setLoading(true);
+
+    // ✅ listen to this user's notes only
     const notesRef = collection(db, "users", user.uid, "notes");
     const q = query(notesRef, orderBy("createdAt", "desc"));
+
     const unsub = onSnapshot(
       q,
       (snapshot) => {
-        const list = snapshot.docs.map((d) => ({
-          id: d.id,
-          ...(d.data() as any),
-        })) as Note[];
+        const list = snapshot.docs.map(
+          (d) =>
+            ({
+              id: d.id,
+              ...(d.data() as any),
+            } as Note)
+        );
         setNotes(list);
         setLoading(false);
       },
@@ -71,9 +76,11 @@ export const NotesProvider = ({ children }: { children: React.ReactNode }) => {
     );
 
     setUnsubscribe(() => unsub);
+
     return () => unsub();
   }, [user]);
 
+  // ✅ add new note under /users/{uid}/notes
   const addNote = async ({ title, content }: Omit<Note, "id">) => {
     if (!user) throw new Error("No user");
     const notesRef = collection(db, "users", user.uid, "notes");
@@ -85,24 +92,22 @@ export const NotesProvider = ({ children }: { children: React.ReactNode }) => {
     return docRef.id;
   };
 
+  // ✅ update a note under /users/{uid}/notes/{id}
   const updateNote = async (id: string, title: string, content: string) => {
     if (!user) throw new Error("No user");
     const d = doc(db, "users", user.uid, "notes", id);
     await updateDoc(d, { title, content });
   };
 
+  // ✅ delete a note under /users/{uid}/notes/{id}
   const deleteNote = async (id: string) => {
     if (!user) throw new Error("No user");
-    const d = doc(db, "users", user.uid, "notes", id);
-    await deleteDoc(d);
-  };
-
-  const refresh = () => {
-    // re-run listener: simply toggling user effect or recreate listener; for now we rely on realtime
+    const noteRef = doc(db, "users", user.uid, "notes", id);
+    await deleteDoc(noteRef);
   };
 
   return (
-    <NotesContext.Provider value={{ notes, loading, addNote, updateNote, deleteNote, refresh }}>
+    <NotesContext.Provider value={{ notes, loading, addNote, updateNote, deleteNote }}>
       {children}
     </NotesContext.Provider>
   );
