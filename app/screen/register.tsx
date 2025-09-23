@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthContext } from "../../contexts/AuthContext";
 
@@ -42,41 +43,45 @@ export default function Register() {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-          <View style={styles.container}>
-            <Text style={styles.header}>Register</Text>
+      <KeyboardAwareScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid
+        extraScrollHeight={24}
+        extraHeight={Platform.OS === "ios" ? 24 : 0}
+      >
+        <View style={styles.container}>
+          <Text style={styles.header}>Register</Text>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor="#000"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor="#000"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor="#000"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor="#000"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
 
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? <Text style={styles.error}>{error}</Text> : null}
 
-            <TouchableOpacity style={styles.button} onPress={handleRegister}>
-              <Text style={styles.buttonText}>Register</Text>
-            </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={handleRegister}>
+            <Text style={styles.buttonText}>Register</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => router.replace("/screen/login")}>
-              <Text style={styles.link}>Already have an account? Login</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          <TouchableOpacity onPress={() => router.replace("/screen/login")}>
+            <Text style={styles.link}>Already have an account? Login</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
