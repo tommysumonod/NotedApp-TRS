@@ -1,6 +1,7 @@
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useAuthContext } from "../../contexts/AuthContext";
+import { useNotes } from "../../contexts/NotesContext";
 
 export default function ProfileView() {
   const { user, signOut } = useAuthContext();
@@ -11,6 +12,8 @@ export default function ProfileView() {
     router.replace("/screen/login");
   };
 
+  const { notes } = useNotes();
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>My Profile</Text>
@@ -18,6 +21,16 @@ export default function ProfileView() {
       <View style={styles.infoBox}>
         <Text style={styles.label}>Email</Text>
         <Text style={styles.value}>{user?.email}</Text>
+      </View>
+
+      <View style={styles.infoBox}>
+        <Text style={styles.label}>UID</Text>
+        <Text style={styles.value}>{user?.uid}</Text>
+      </View>
+
+      <View style={styles.infoBox}>
+        <Text style={styles.label}>Notes count</Text>
+        <Text style={styles.value}>{notes?.length ?? 0}</Text>
       </View>
 
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>

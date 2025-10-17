@@ -1,14 +1,13 @@
-// contexts/NotesContext.tsx
 import {
   addDoc,
   collection,
   deleteDoc,
   doc,
   onSnapshot,
-  orderBy,
   query,
   serverTimestamp,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { db } from "../firebase/firebaseConfig";
@@ -18,7 +17,7 @@ export type Note = {
   id: string;
   title: string;
   content: string;
-  createdAt?: any;
+  createdAt?: number | any;
 };
 
 type NotesContextType = {
@@ -35,16 +34,9 @@ export const NotesProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuthContext();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
-  const [unsubscribe, setUnsubscribe] = useState<(() => void) | null>(null);
 
   useEffect(() => {
-    if (unsubscribe) {
-      unsubscribe();
-      setUnsubscribe(null);
-    }
-
     if (!user) {
-      // no user = no notes
       setNotes([]);
       setLoading(false);
       return;
@@ -52,65 +44,86 @@ export const NotesProvider = ({ children }: { children: React.ReactNode }) => {
 
     setLoading(true);
 
-    // ✅ listen to this user's notes only
-    const notesRef = collection(db, "users", user.uid, "notes");
-    const q = query(notesRef, orderBy("createdAt", "desc"));
+    const notesRef = collection(db, "notes");
+    const q = query(notesRef, where("userId", "==", user.uid));
 
-    const unsub = onSnapshot(
+    const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const list = snapshot.docs.map(
-          (d) =>
-            ({
-              id: d.id,
-              ...(d.data() as any),
-            } as Note)
-        );
+        const list: Note[] = snapshot.docs.map((doc) => {
+          const data = doc.data() as any;
+          // handle Firestore Timestamp or plain JS date/number
+          const createdAt = data.createdAt?.toMillis?.()
+            ? data.createdAt.toMillis()
+            : data.createdAt || Date.now();
+          return {
+            id: doc.id,
+            title: data.title,
+            content: data.content,
+            createdAt,
+          };
+        });
+
+        // client sort by createdAt desc
+        list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
         setNotes(list);
         setLoading(false);
       },
       (err) => {
-        console.error("notes onSnapshot error:", err);
+        console.error("notes onSnapshot error:", err?.code ?? err, err?.message ?? "");
+        setNotes([]);
         setLoading(false);
       }
     );
 
-    setUnsubscribe(() => unsub);
-
-    return () => unsub();
+    return () => unsubscribe();
   }, [user]);
 
-  // ✅ add new note under /users/{uid}/notes
   const addNote = async ({ title, content }: Omit<Note, "id">) => {
-    if (!user) throw new Error("No user");
-    const notesRef = collection(db, "users", user.uid, "notes");
-    const docRef = await addDoc(notesRef, {
-      title,
-      content,
-      createdAt: serverTimestamp(),
-    });
-    return docRef.id;
+    if (!user) throw new Error("No user logged in");
+
+    try {
+      const docRef = await addDoc(collection(db, "notes"), {
+        userId: user.uid,
+        title,
+        content,
+        createdAt: serverTimestamp(),
+      });
+      console.log("addNote created doc:", docRef.id);
+      return docRef.id;
+    } catch (err) {
+      console.error("addNote error:", err);
+      throw err;
+    }
   };
 
-  // ✅ update a note under /users/{uid}/notes/{id}
   const updateNote = async (id: string, title: string, content: string) => {
-    if (!user) throw new Error("No user");
-    const d = doc(db, "users", user.uid, "notes", id);
-    await updateDoc(d, { title, content });
+    if (!user) throw new Error("No user logged in");
+
+    try {
+      const noteRef = doc(db, "notes", id);
+      await updateDoc(noteRef, { title, content });
+    } catch (err) {
+      console.error("updateNote error:", err);
+      throw err;
+    }
   };
 
-  // ✅ delete a note under /users/{uid}/notes/{id}
   const deleteNote = async (id: string) => {
-    if (!user) throw new Error("No user");
-    const noteRef = doc(db, "users", user.uid, "notes", id);
-    await deleteDoc(noteRef);
+    if (!user) throw new Error("No user logged in");
+
+    try {
+      const noteRef = doc(db, "notes", id);
+      await deleteDoc(noteRef);
+      setNotes((prev) => prev.filter((n) => n.id !== id));
+    } catch (err) {
+      console.error("deleteNote error:", err);
+      throw err;
+    }
   };
 
-  return (
-    <NotesContext.Provider value={{ notes, loading, addNote, updateNote, deleteNote }}>
-      {children}
-    </NotesContext.Provider>
-  );
+  return <NotesContext.Provider value={{ notes, loading, addNote, updateNote, deleteNote }}>{children}</NotesContext.Provider>;
 };
 
 export const useNotes = () => {

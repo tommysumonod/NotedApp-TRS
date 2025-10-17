@@ -1,14 +1,20 @@
 // app/(tabs)/NoteList.tsx
-import React from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
+import React from "react";
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useNotes } from "../../contexts/NotesContext";
 
 export default function NoteList() {
   const { notes, loading } = useNotes();
   const router = useRouter();
 
-  if (loading) return <View style={{flex:1,justifyContent:"center"}}><ActivityIndicator /></View>;
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#3b82f6" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -23,10 +29,7 @@ export default function NoteList() {
           <TouchableOpacity
             style={styles.noteBox}
             onPress={() =>
-              router.push({
-                pathname: "/screen/NoteViewEditor",
-                params: { id: item.id },
-              })
+              router.push({ pathname: "/screen/NoteViewEditor", params: { id: item.id, title: item.title, content: item.content } })
             }
           >
             <Text style={styles.title}>{item.title || "Untitled"}</Text>
@@ -40,4 +43,11 @@ export default function NoteList() {
   );
 }
 
-const styles = StyleSheet.create({ container: { flex: 1, padding: 20 }, addButton: { backgroundColor: "#3b82f6", padding: 12, borderRadius: 10, marginBottom: 15, alignItems: "center" }, addText: { color: "white", fontWeight: "bold", fontSize: 16 }, noteBox: { padding: 15, backgroundColor: "#fff", borderRadius: 10, marginBottom: 10, elevation: 2 }, title: { fontSize: 18, fontWeight: "bold" }, content: { fontSize: 14, color: "#555" }});
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20 },
+  addButton: { backgroundColor: "#3b82f6", padding: 12, borderRadius: 10, marginBottom: 15, alignItems: "center" },
+  addText: { color: "white", fontWeight: "bold", fontSize: 16 },
+  noteBox: { padding: 15, backgroundColor: "#fff", borderRadius: 10, marginBottom: 10, elevation: 2 },
+  title: { fontSize: 18, fontWeight: "bold" },
+  content: { fontSize: 14, color: "#555" },
+});

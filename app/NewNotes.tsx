@@ -1,25 +1,27 @@
 import { useRouter } from "expo-router";
-import { useNotes } from "./context/NoteContext";
-import { v4 as uuidv4 } from "uuid";
+import { useEffect } from "react";
+import { useNotes } from "../contexts/NotesContext";
 
 export default function NewNotes() {
   const { addNote } = useNotes();
   const router = useRouter();
 
-  const handleCreate = () => {
-    // create a blank note
-    const newId = uuidv4();
-    addNote({ id: newId, title: "", content: "" });
+  useEffect(() => {
+    const create = async () => {
+      try {
+        // Create an empty note in Firestore and get its id
+        const id = await addNote({ title: "", content: "" });
+        // navigate to editor for that note
+        router.replace({ pathname: "/screen/NoteViewEditor", params: { id: String(id) } });
+      } catch (err) {
+        console.error("failed to create note", err);
+        // fallback: go back to notes list
+        router.replace("/(tabs)/NoteList");
+      }
+    };
 
-    // redirect directly to editor for that note
-    router.replace({
-      pathname: "./screen/NoteViewEditor",
-      params: { id: newId },
-    });
-  };
+    create();
+  }, []);
 
-  // run immediately
-  handleCreate();
-
-  return null; // no UI, it just redirects
+  return null;
 }
